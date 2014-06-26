@@ -4,25 +4,26 @@
 MyPaint::MyPaint(QWidget *parent) :
     QDialog(parent),lineButClicked( false ), ellButClicked( false ),
     rectButClicked( false ), index( 0 ), pointsNum( 0 ), Paint( false ),
+    GraphicEvent( false ),
     ui(new Ui::MyPaint)
 {
     ui->setupUi(this);
 
     //Initialize pen list
     penBox = new QComboBox();
-
     //Initialize pen
     pen = QPen( QColor( 0, 0, 0 ) );
-
     InitializeLayouts();
     InitializePenBox();
     InitializeButtons();
 
+
+
     // Create scene and a view for painting
+
     scene = new QGraphicsScene();
     view = new QGraphicsView( scene );
     view->showMaximized();
-    view->centerOn( view->rect().left(), view->rect().top() );
     view->show();
 
 
@@ -142,7 +143,7 @@ void MyPaint::InitializeButton(QPushButton *&button, QString iconStr)
      button = new QPushButton();
      button->setCheckable( true );
      button->setIcon( QIcon( iconStr ) );
-     buttonLayout->addWidget( button );
+     onlyButLayout->addWidget( button );
 }
 
 void MyPaint::InitializeLayouts()
@@ -150,7 +151,19 @@ void MyPaint::InitializeLayouts()
     frontLayout = new QHBoxLayout();
     buttonLayout = new QVBoxLayout();
     paintLayout = new QVBoxLayout();
+    onlyButLayout = new QVBoxLayout();
+    penLayout = new QVBoxLayout();
 
+
+    label = new QLabel( "Set Pen Color:" );
+    label->setFixedSize( 70, 10 );
+    penLayout->addWidget( label );
+
+    penLayout->addSpacing( 0 );
+    buttonLayout->addSpacing( 5 );
+
+    buttonLayout->addLayout( penLayout );
+    buttonLayout->addLayout( onlyButLayout );
     frontLayout->addLayout( buttonLayout );
     frontLayout->addLayout( paintLayout );
 }
@@ -164,7 +177,7 @@ void MyPaint::InitializePenBox()
     penBox->addItem( QIcon( "grey.jpg" ), "gray" );
     penBox->addItem( QIcon( "yellow.jpg" ), "yellow" );
 
-    buttonLayout->addWidget( penBox );
+    penLayout->addWidget( penBox );
 }
 
 void MyPaint::mousePressEvent(QMouseEvent  *event)
@@ -211,12 +224,17 @@ void MyPaint::mousePressEvent(QMouseEvent  *event)
                     break;
                 }
 
-
                 this->update();
             }
         break;
         }
     }
+}
+
+void MyPaint::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    GraphicEvent = true;
+
 }
 
 void MyPaint::paintEvent(QPaintEvent *pe)
@@ -225,13 +243,13 @@ void MyPaint::paintEvent(QPaintEvent *pe)
     {
         QPainter painter( this );
         QPoint temp( view->pos() );
-        QPoint correct( view->rect().width() / 2, view->rect().height() / 2 );
+        QPoint correct( view->size().width() / 2, view->size().height() / 2 );
         if( lineButClicked )
         {
-
-            items.push_back( scene->addLine( QLine(
-                  geom[index][0] - temp - correct,
-                  geom[index][1] - temp - correct   ), pen ) );
+           items.push_back( scene->addLine( QLine(
+             QPoint( geom[index][0].x() - temp.x() - correct.x() - 100, geom[index][0].y() - temp.y() - correct.y() ),
+             QPoint( geom[index][1].x() - temp.x() - correct.x() - 100, geom[index][1].y() - temp.y() - correct.y() ) ),
+                   pen ) );
 
             items[index]->setFlag( QGraphicsItem::ItemIsMovable );
 
@@ -240,14 +258,21 @@ void MyPaint::paintEvent(QPaintEvent *pe)
         }
         else if( ellButClicked )
         {
-            scene->addRect( QRect( geom[index][0] - temp, geom[index][1] - temp ),
-                    pen );
+            items.push_back( scene->addEllipse( QRect( geom[index][0] - temp - correct, geom[index][1]
+                             - temp - correct ), pen ) );
+
+            items[index]->setFlag( QGraphicsItem::ItemIsMovable );
+
             index++;
             pointsNum = 0;
         }
         else if ( rectButClicked )
         {
-            scene->addEllipse( QRect( geom[index][0], geom[index][1] ), pen );
+            items.push_back( scene->addRect( QRect( geom[index][0] - temp - correct, geom[index][1]
+                             - temp - correct ), pen ) );
+
+            items[index]->setFlag( QGraphicsItem::ItemIsMovable );
+
             index++;
             pointsNum = 0;
         }

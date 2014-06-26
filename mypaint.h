@@ -6,16 +6,15 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QGraphicsScene>
-#include <QGraphicsItem>
 #include <QGraphicsView>
 #include <QMouseEvent>
 #include <QLabel>
-#include <QVector>
-#include <QPoint>
 #include <QComboBox>
-#include <QPen>
 #include <QGraphicsSceneMouseEvent>
+#include <QVector>
 #include <QGraphicsItem>
+#include <QLabel>
+
 
 namespace Ui {
 class MyPaint;
@@ -36,7 +35,7 @@ private slots:
 
 protected:
     virtual void mousePressEvent( QMouseEvent  *event);
-
+    virtual void mousePressEvent ( QGraphicsSceneMouseEvent * event );
 private:
     void InitializeButtons();
     void InitializeButton( QPushButton*& button, QString iconStr );
@@ -52,6 +51,8 @@ private:
     //Layouts
     QHBoxLayout* frontLayout;
     QVBoxLayout* buttonLayout;
+    QVBoxLayout* penLayout;
+    QVBoxLayout* onlyButLayout;
     QLayout* paintLayout;
 
     // Pen color list
@@ -72,10 +73,12 @@ private:
     bool ellButClicked;
     bool Paint;
 
+    bool GraphicEvent;
+
     //Graphic View & Scene
     QGraphicsView* view;
     QGraphicsScene* scene;
-
+    QGraphicsItem* tempItem;
     // Save position of all geometry
     QVector< QVector<QPoint> > geom;
     // Save object
