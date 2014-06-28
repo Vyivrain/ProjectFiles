@@ -13,20 +13,19 @@ MyPaint::MyPaint(QWidget *parent) :
     penBox = new QComboBox();
     //Initialize pen
     pen = QPen( QColor( 0, 0, 0 ) );
+    pen.setCosmetic( true );
+    // Initialize Layouts, boxes, buttons
     InitializeLayouts();
     InitializePenBox();
     InitializeButtons();
 
+    FileDial = new QFileDialog( this,
+                                tr("Save File"),
+                                "C://",
+                                "Images (*.png)" );
 
-
-    // Create scene and a view for painting
-
-    scene = new QGraphicsScene();
-    view = new QGraphicsView( scene );
-    view->showMaximized();
-    view->show();
-
-
+    myscene = new MyScene();
+    view = myscene->GetView();
     paintLayout->addWidget( view );
 
     setLayout( frontLayout );
@@ -40,18 +39,18 @@ MyPaint::~MyPaint()
 void MyPaint::lineButtonClicked()
 {
     // Button isn't pressed
-    if( !lineButClicked )
+    if( !myscene->getLineButClicked() )
     {
-        lineButClicked = true;
+        myscene->setLineButClicked( true );
 
-        if( ellButClicked )
+        if( myscene->getEllButClicked() )
         {
-            ellButClicked = false;
+            myscene->setEllButClicked( false );
             ellButton->setChecked( false );
         }
-        if( rectButClicked )
+        if( myscene->getRectButClicked() )
         {
-            rectButClicked = false;
+            myscene->setRectButClicked( false );
             rectButton->setChecked( false );
         }
         view->setCursor( Qt::CrossCursor );
@@ -59,7 +58,7 @@ void MyPaint::lineButtonClicked()
     // Button is pressed
     else
     {
-        lineButClicked = false;
+         myscene->setLineButClicked( false );
 
         view->setCursor( Qt::ArrowCursor );
     }
@@ -68,18 +67,18 @@ void MyPaint::lineButtonClicked()
 void MyPaint::ellButtonClicked()
 {
     // Button isn't pressed
-    if( !ellButClicked )
+    if( !myscene->getEllButClicked() )
     {
-        ellButClicked = true;
+        myscene->setEllButClicked( true );
 
-        if( lineButClicked )
+        if( myscene->getLineButClicked() )
         {
-            lineButClicked = false;
+            myscene->setLineButClicked( false );
             lineButton->setChecked( false );
         }
-        if( rectButClicked )
+        if( myscene->getRectButClicked() )
         {
-            rectButClicked = false;
+            myscene->setRectButClicked( false );
             rectButton->setChecked( false );
         }
         view->setCursor( Qt::CrossCursor );
@@ -87,7 +86,7 @@ void MyPaint::ellButtonClicked()
     // Button is pressed
     else
     {
-        ellButClicked = false;
+        myscene->setEllButClicked( false );
 
         view->setCursor( Qt::ArrowCursor );
     }
@@ -96,18 +95,18 @@ void MyPaint::ellButtonClicked()
 void MyPaint::rectButtonClicked()
 {
     // Button isn't pressed
-    if( !rectButClicked )
+    if( !myscene->getRectButClicked() )
     {
-        rectButClicked = true;
+        myscene->setRectButClicked( true );
 
-        if( lineButClicked )
+        if(  myscene->getLineButClicked() )
         {
-            lineButClicked = false;
+            myscene->setLineButClicked( false );
             lineButton->setChecked( false );
         }
-        if( ellButClicked )
+        if( myscene->getEllButClicked() )
         {
-            ellButClicked = false;
+            myscene->setEllButClicked( false );
             ellButton->setChecked( false );
         }
         view->setCursor( Qt::CrossCursor );
@@ -115,10 +114,45 @@ void MyPaint::rectButtonClicked()
     // Button is pressed
     else
     {
-        rectButClicked = false;
+        myscene->setRectButClicked( false );
 
         view->setCursor( Qt::ArrowCursor );
     }
+}
+
+void MyPaint::SaveImage()
+{
+    QString fileName = FileDial->getSaveFileName( this,
+                                                  tr("Save File"),
+                                                  "C://",
+                                                  "Images (*.png)" );
+
+
+    myscene->clearSelection();
+    myscene->setSceneRect( myscene->itemsBoundingRect() );
+
+    QImage image( myscene->sceneRect().size().toSize(), QImage::Format_ARGB32 );
+    image.fill( Qt::transparent );
+
+    QPainter painter( &image );
+    myscene->render( &painter );
+    image.save( fileName );
+
+}
+
+void MyPaint::OpenImage()
+{
+    QString fileName = FileDial->getOpenFileName( this,
+                                                  tr("Save File"),
+                                                  "C://",
+                                                  "Images (*.png)" );
+
+    QImage image( fileName );
+    QGraphicsPixmapItem* item = new QGraphicsPixmapItem( QPixmap::fromImage( image ) );
+    item->setPos( 0, 0 );
+    item->setFlags( QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable );
+    myscene->addItem( item );
+
 }
 
 void MyPaint::InitializeButtons()
@@ -128,14 +162,18 @@ void MyPaint::InitializeButtons()
     InitializeButton( ellButton, "Ellipse.png" );
     InitializeButton( rectButton, "Rect.png" );
 
-    label = new QLabel();
-    buttonLayout->addWidget( label );
+    saveButton = new QPushButton( "Save image" );
+    openButton = new QPushButton( "Open image" );
+
+    buttonLayout->addWidget( saveButton );
+    buttonLayout->addWidget( openButton );
 
     // Set connections
     connect( lineButton, SIGNAL(clicked()), this, SLOT( lineButtonClicked() ) );
     connect( ellButton, SIGNAL(clicked()), this, SLOT( ellButtonClicked() ) );
     connect( rectButton, SIGNAL(clicked()), this, SLOT( rectButtonClicked() ) );
-
+    connect( saveButton, SIGNAL(clicked()), this, SLOT( SaveImage()) );
+    connect( openButton, SIGNAL(clicked()), this, SLOT( OpenImage()) );
 }
 
 void MyPaint::InitializeButton(QPushButton *&button, QString iconStr)
@@ -180,108 +218,108 @@ void MyPaint::InitializePenBox()
     penLayout->addWidget( penBox );
 }
 
+void MyPaint::SetPenColor(int index)
+{
+    switch( index )
+    {
+        case 0:
+            pen.setColor( Qt::black );
+        break;
+        case 1:
+            pen.setColor( Qt::red );
+        break;
+        case 2:
+            pen.setColor( Qt::blue );
+        break;
+        case 3:
+            pen.setColor( Qt::green );
+        break;
+        case 4:
+            pen.setColor( Qt::gray );
+        break;
+        case 5:
+            pen.setColor( Qt::yellow );
+        break;
+
+        default:
+        break;
+    }
+}
+
 void MyPaint::mousePressEvent(QMouseEvent  *event)
 {
-    if( event->button() == Qt::LeftButton && view->cursor().shape() == Qt::CrossCursor )
+    if( event->button() == Qt::LeftButton )
     {
-        switch( pointsNum )
+        if( view->cursor().shape() == Qt::CrossCursor )
         {
-        case 0:
-            // Create new point for figure with 2 points
-            geom.push_back( QVector<QPoint>() );
-            // pushback coords of the mouse click
-            PushBackPoint(  event->pos() );
-        break;
-
-        case 1:
-            PushBackPoint( event->pos()  );
-
-            if( lineButClicked || ellButClicked || rectButClicked )
+            switch( pointsNum )
             {
-                Paint = true;
-                switch( penBox->currentIndex() )
+            case 0:
+                // Save 1 position
+                point1 = myscene->GetPoint().toPoint();
+
+                SetPenColor( penBox->currentIndex() );
+
+                // go to another case
+                pointsNum++;
+
+            break;
+
+            case 1:
+                // Save 2 position
+                point2 = myscene->GetPoint().toPoint();
+                // Go to 3 point if needed
+                pointsNum++;
+                if( myscene->getLineButClicked() || myscene->getEllButClicked() || myscene->getRectButClicked() )
                 {
-                    case 0:
-                        pen.setColor( Qt::black );
-                    break;
-                    case 1:
-                        pen.setColor( Qt::red );
-                    break;
-                    case 2:
-                        pen.setColor( Qt::blue );
-                    break;
-                    case 3:
-                        pen.setColor( Qt::green );
-                    break;
-                    case 4:
-                        pen.setColor( Qt::gray );
-                    break;
-                    case 5:
-                        pen.setColor( Qt::yellow );
-                    break;
+                    // Ready for painting
+                    Paint = true;
 
-                    default:
-                    break;
+                    // Call repaint
+                    this->update();
                 }
-
-                this->update();
+            break;
             }
-        break;
+        }
+        else
+        {
+            myscene->SetCursorStatus( true );
         }
     }
 }
 
-void MyPaint::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
-    GraphicEvent = true;
-
-}
-
 void MyPaint::paintEvent(QPaintEvent *pe)
 {
+    Q_UNUSED( pe );
     if( Paint )
-    {
-        QPainter painter( this );
-        QPoint temp( view->pos() );
-        QPoint correct( view->size().width() / 2, view->size().height() / 2 );
-        if( lineButClicked )
+    { 
+        if( myscene->getLineButClicked() )
         {
-           items.push_back( scene->addLine( QLine(
-             QPoint( geom[index][0].x() - temp.x() - correct.x() - 100, geom[index][0].y() - temp.y() - correct.y() ),
-             QPoint( geom[index][1].x() - temp.x() - correct.x() - 100, geom[index][1].y() - temp.y() - correct.y() ) ),
-                   pen ) );
+            item = myscene->addLine( QLine( point1, point2 ), pen );
 
-            items[index]->setFlag( QGraphicsItem::ItemIsMovable );
+            item->setFlags( QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable );
 
             index++;
             pointsNum = 0;
         }
-        else if( ellButClicked )
+        else if( myscene->getEllButClicked() )
         {
-            items.push_back( scene->addEllipse( QRect( geom[index][0] - temp - correct, geom[index][1]
-                             - temp - correct ), pen ) );
+            item = myscene->addEllipse( QRect( point1, point2 ), pen ) ;
 
-            items[index]->setFlag( QGraphicsItem::ItemIsMovable );
+             item->setFlags( QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable );
 
-            index++;
+             index++;
             pointsNum = 0;
         }
-        else if ( rectButClicked )
+        else if ( myscene->getRectButClicked() )
         {
-            items.push_back( scene->addRect( QRect( geom[index][0] - temp - correct, geom[index][1]
-                             - temp - correct ), pen ) );
+            item = myscene->addRect( QRect( point1, point2 ), pen );
 
-            items[index]->setFlag( QGraphicsItem::ItemIsMovable );
+            item->setFlags( QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable );
 
             index++;
             pointsNum = 0;
         }
         Paint = false;
     }
-}
-
-void MyPaint::PushBackPoint( QPoint mousePos )
-{
-    pointsNum++;
-    geom[index].push_back( mousePos );
 }

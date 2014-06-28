@@ -5,15 +5,14 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
-#include <QGraphicsScene>
-#include <QGraphicsView>
 #include <QMouseEvent>
 #include <QLabel>
 #include <QComboBox>
-#include <QGraphicsSceneMouseEvent>
 #include <QVector>
-#include <QGraphicsItem>
 #include <QLabel>
+#include <QFileDialog>
+
+#include "myscene.h"
 
 
 namespace Ui {
@@ -32,18 +31,21 @@ private slots:
     void lineButtonClicked();
     void ellButtonClicked();
     void rectButtonClicked();
+    void SaveImage();
+    void OpenImage();
 
 protected:
     virtual void mousePressEvent( QMouseEvent  *event);
-    virtual void mousePressEvent ( QGraphicsSceneMouseEvent * event );
+
 private:
     void InitializeButtons();
     void InitializeButton( QPushButton*& button, QString iconStr );
     void InitializeLayouts();
     void InitializePenBox();
+    void SetPenColor( int index );
+
 
     void paintEvent( QPaintEvent * pe );
-    void PushBackPoint( QPoint mousePos );
 
 private:
     Ui::MyPaint *ui;
@@ -64,6 +66,8 @@ private:
     QPushButton* lineButton;
     QPushButton* rectButton;
     QPushButton* ellButton;
+    QPushButton* saveButton;
+    QPushButton* openButton;
 
     QLabel* label;
 
@@ -76,17 +80,22 @@ private:
     bool GraphicEvent;
 
     //Graphic View & Scene
+
+    MyScene* myscene;
     QGraphicsView* view;
-    QGraphicsScene* scene;
-    QGraphicsItem* tempItem;
+    QGraphicsItem* item;
     // Save position of all geometry
     QVector< QVector<QPoint> > geom;
-    // Save object
-    QVector< QGraphicsItem* > items;
+
+    QPoint point1;
+    QPoint point2;
     // Index to current figure
     int index;
     // Points to make figure
     int pointsNum;
+
+    QFileDialog* FileDial;
+
 };
 
 #endif // MYPAINT_H
